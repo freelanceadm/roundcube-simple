@@ -1,0 +1,53 @@
+version: '2'
+services:
+  web:
+    restart: on-error
+    build: ./myroundcube
+    mem_limit: "512000000"
+    image: forthex/roundcube
+    ports:
+        - "8081:80"
+    environment:
+        DBNAME: "${MYSQL_DATABASE}"
+        DBUSR: "${MYSQL_USER}"
+        DBUSRPASS: "${MYSQL_PASSWORD}"
+        DBHOST: "mariadb"
+        SMTPSERVER: "${HOSTNAME}"
+    depends_on:
+        - "mariadb"
+        - "mypostfix"
+
+  mypostfix:
+    restart: on-error
+    build: ./mydovecot
+    image: forthex/dovecot
+    mem_limit: 256m
+    ports:
+      - "25:25"
+      - "110:110"
+      - "143:143"
+    environment:
+      MHOSTNAME: "${HOSTNAME}"
+      MLISTENON: "${LISTENON}"
+    volumes:
+      - ./data/vmail:/var/vmail
+      - ./myusers:/etc/dovecot/users
+    networks:
+      default:
+        aliases:
+          - "${HOSTNAME}"
+
+  mariadb:
+    image: mariadb:10.1
+    restart: always
+    mem_limit: "512000000"
+    expose:
+        - 3306
+    volumes:
+        - ./data/mysql:/var/lib/mysql
+    environment:
+        - MYSQL_ROOT_PASSWORD
+        - MYSQL_DATABASE
+        - MYSQL_USER
+        - MYSQL_PASSWORD
+
